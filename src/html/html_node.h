@@ -17,14 +17,14 @@ class css_node;
 class html_tag;
 class html_node
 {
-    html_node *_parent;
+    html_tag *_parent;
 
 public:
     html_node();
     virtual ~html_node();
 
-    html_node *parent() const;
-    void set_parent(html_node *parent);
+    html_tag *parent() const;
+    void set_parent(html_tag *parent);
     virtual std::string outter_html()
     {
         return  "";
@@ -81,11 +81,13 @@ public:
     bool has_attr(const std::string &name);
     std::string data(const std::string &name);
     void set_attr(const std::string &name, const std::string &value);
+    void remove_attr(const std::string &name);
     void add_class(const std::string &name);
     void remove_class(const std::string &name);
     bool has_class(const std::string &name) const;
 
     virtual void add_child(html_node *child);
+    void remove_child(html_node *child);
 
     std::string outter_html() override;
     virtual std::string inner_html() const;
@@ -96,8 +98,14 @@ public:
     void setHasCloseTag(bool hasCloseTag);
     std::vector<html_node *> childs() const;
     html_tag_vector find(const std::string &query);
+    html_tag_vector find(std::function<bool(html_tag*)> &check);
 
     std::string to_string(print_type type = print_type::compact);
+    void remove();
+    void unwrap();
+    void unwrap_child(html_tag *child);
+
+    std::map<std::string, std::string> attributes() const;
 
 private:
     void append(core::string_renderer &r) override;

@@ -22,6 +22,23 @@ protected:
         std::string ignore;
         bool insert_begin_end;
         bool insert_content;
+        bool insert_if_empty;
+
+        literal_t(std::string begin, std::string end, std::string ignore,
+                bool insert_begin_end, bool insert_content)
+            : begin(begin), end(end), ignore(ignore),
+              insert_begin_end(insert_begin_end),
+              insert_content(insert_content),
+              insert_if_empty(false)
+        {}
+
+        literal_t(std::string begin, std::string end, std::string ignore,
+                bool insert_begin_end, bool insert_content, bool insert_if_empty)
+            : begin(begin), end(end), ignore(ignore),
+              insert_begin_end(insert_begin_end),
+              insert_content(insert_content),
+              insert_if_empty(insert_if_empty)
+        {}
     };
 
     std::string _error_message;
@@ -30,6 +47,7 @@ protected:
 //    std::vector<std::function<int(int)>> _check_fns;
     std::vector<int(*)(int)> _check_fns;
     std::vector<std::string> _tokens;
+    std::vector<std::string>::iterator _token_it;
 
 public:
     token_parser();
@@ -48,6 +66,8 @@ protected:
     std::string read_until(const std::string &text, size_t &i, const literal_t *lt) const;
     bool is_valid_token(const std::string &token) const;
     std::string take_token();
+    std::string next_token(int space = 0);
+    std::string put_token();
 };
 
 TOOSKA_END_NAMESPACE

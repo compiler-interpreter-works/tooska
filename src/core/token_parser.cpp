@@ -64,8 +64,11 @@ std::vector<std::string> token_parser::parse_tokens()
                 if (literal->insert_content) {
                     if (literal->insert_begin_end)
                         _tokens.push_back(literal->begin);
+
                     if (is_valid_token(last_token))
                         _tokens.push_back(last_token);
+                    else if (literal->insert_if_empty)
+                        _tokens.push_back("");
 
                     if (literal->insert_begin_end)
                         _tokens.push_back(literal->end);
@@ -103,6 +106,7 @@ std::vector<std::string> token_parser::parse_tokens()
 //       std::cout << token << std::endl;
 //    });
 //    std::cout << "==============" << _tokens.size() << std::endl;
+    _token_it = _tokens.begin();
     return _tokens;
 }
 
@@ -144,21 +148,37 @@ bool token_parser::is_valid_token(const string &token) const
     if (!token.length())
         return false;
 
-    return any_of(token.begin(), token.end(), [](char ch){
-        return isprint(ch);
+    bool r = any_of(token.begin(), token.end(), [](char ch){
+        return !iscntrl(ch);
     });
+//    if (!r)
+//        cout << token << " is not valid\n";
+    return r;
 }
 
 string token_parser::take_token()
 {
-    static auto i = _tokens.begin();
-    if (i == _tokens.end())
+    if (_token_it == _tokens.end()) {
+//        std::cout << "No token avaible" << std::endl;
         return std::string();
+    }
 
-    auto ret = *i;
-//    std::cout << "Token selected: " << ret << std::endl;
-    ++i;
+    auto ret = *_token_it;
+
+    ++_token_it;
     return ret;
+}
+
+string token_parser::next_token(int space)
+{
+    if (_token_it == _tokens.end() || (_token_it + space) == _tokens.end())
+        return std::string();
+    return *(_token_it + space);
+}
+
+string token_parser::put_token()
+{
+    --_token_it;
 }
 
 TOOSKA_END_NAMESPACE

@@ -22,8 +22,8 @@ int html_document::token(int n)
 html_document::html_document() : token_parser(), _root_tag(nullptr)
 {
     _literals.push_back(new literal_t{">",  "<",  "",     true,  true});
-    _literals.push_back(new literal_t{"\"", "\"", "\\\"", false, true});
-    _literals.push_back(new literal_t{"'",  "'",  "\\'",  false, true});
+    _literals.push_back(new literal_t{"\"", "\"", "\\\"", false, true, true});
+    _literals.push_back(new literal_t{"'",  "'",  "\\'",  false, true, true});
     _literals.push_back(new literal_t{"!--",  "-->",  "",     false,  false});
 
     _check_fns.push_back(&html_document::token);
@@ -110,7 +110,7 @@ void html_document::parse()
         if (token == ">"){
             if (_tokens.size() > i + 1 && _tokens.at(i + 1) != "<") {
                 auto text = core::string_helper::trim_copy(_tokens.at(i + 1));
-                if (any_of(text.begin(), text.end(), &iswalpha)) {
+                if (is_valid_token(text)) {
                     if (!stack.size()) {
                         std::cerr << "Invalid document" << std::endl << text;
                         return;

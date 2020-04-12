@@ -99,8 +99,11 @@ html_tag::html_tag() : html_node (), _css(new css_node)
 
 html_tag::~html_tag()
 {
-    for (html_node *child : _childs)
+    for (html_node *child : _childs) {
+        child->set_parent(nullptr);
         delete child;
+    }
+    _childs.clear();
 }
 
 std::string html_tag::id()
@@ -142,6 +145,21 @@ void html_tag::set_attr(const std::string &name, const std::string &value)
     _attributes[n] = value;
 }
 
+void html_tag::remove_attr(const std::string &name)
+{
+    if (name == "style") {
+        _css->clear();
+        return;
+    } else if (name == "class") {
+        _classes.clear();
+        return;
+    }
+
+    auto i = _attributes.find(name);
+    if (i != _attributes.end())
+        _attributes.erase(i, i);
+}
+
 void html_tag::add_class(const std::string &name)
 {
     if (std::find(_classes.begin(), _classes.end(), name) == _classes.end())
@@ -165,6 +183,10 @@ void html_tag::add_child(html_node *child)
     child->set_parent(this);
 }
 
+void html_tag::remove_child(html_node *child)
+{
+    _childs.erase(std::remove(_childs.begin(), _childs.end(), child), _childs.end());
+}
 
 std::string html_tag::outter_html()
 {
@@ -173,6 +195,16 @@ std::string html_tag::outter_html()
     for(it = _attributes.begin(); it != _attributes.end(); ++it)
         html.append(" " + it->first + "=\"" + it->second + "\"");
 
+    if (_classes.size()) {
+        html.append(" class=\"");
+        std::vector<std::string>::iterator classes_it;
+        for (classes_it = _classes.begin(); classes_it != _classes.end(); ++classes_it) {
+            if (classes_it != _classes.begin())
+                html.append(" ");
+            html.append(*classes_it);
+        }
+        html.append("\"");
+    }
     if (_has_close_tag)
         html.append(">");
     else
@@ -213,22 +245,23 @@ std::string html_tag::inner_text() const
     return html;
 }
 
-html_node::html_node()
+html_node::html_node() : _parent(nullptr)
 {
 
 }
 
 html_node::~html_node()
 {
-
+    if (_parent)
+        _parent->remove_child(this);
 }
 
-html_node *html_node::parent() const
+html_tag *html_node::parent() const
 {
     return _parent;
 }
 
-void html_node::set_parent(html_node *parent)
+void html_node::set_parent(html_tag *parent)
 {
     _parent = parent;
 }
@@ -272,6 +305,26 @@ html_tag_vector html_tag::find(const std::string &query)
     qp.set_text(query);
     qp.tag = this;
     return qp.search();
+}
+
+html_tag_vector html_tag::find(std::function<bool (html_tag *)> &check)
+{
+    html_tag_vector ret;
+    std::function<void(html_node*)> ch = [&](html_node *node){
+        auto tag = node->to_tag();
+        if (!tag)
+            return;
+
+        if (check(tag))
+            ret.push_back(tag);
+
+        auto childs = tag->childs();
+        for (auto i = childs.begin(); i != childs.end(); ++i) {
+            ch(*i);
+        }
+    };
+    ch(this);
+    return ret;
 }
 
 void text_node::append(core::string_renderer &r)
@@ -326,6 +379,32 @@ void style_tag::add_child(html_node *child)
     } else {
         std::cout << "Appending non-text node to style tag was not allowed";
     }
+}
+
+std::map<std::string, std::string> html_tag::attributes() const
+{
+    return _attributes;
+}
+
+void html_tag::remove()
+{
+    _parent->remove_child(this);
+    std::for_each(_childs.begin(), _childs.end(), [](html_node *child){
+        delete child;
+    });
+}
+
+void html_tag::unwrap()
+{
+    _parent->remove_child(this);
+    std::for_each(_childs.begin(), _childs.end(), [this](html_node *child){
+//        _parent->add_child(child);
+    });
+}
+
+void html_tag::unwrap_child(html_tag *child)
+{
+//    auto i = _childs
 }
 
 TOOSKA_END_NAMESPACE
